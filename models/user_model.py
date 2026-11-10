@@ -84,6 +84,8 @@ class User(db.Model):
     def register_user(username, password, email, admin=False):
         new_user = User(username=username, password=password, email=email, admin=admin)
         randomint = str(randrange(100))
+        while Book.query.filter_by(book_title="bookTitle" + randomint).first():
+            randomint = str(randrange(100))
         new_user.books = [Book(book_title="bookTitle" + randomint, secret_content="secret for bookTitle" + randomint)]
         db.session.add(new_user)
         db.session.commit()

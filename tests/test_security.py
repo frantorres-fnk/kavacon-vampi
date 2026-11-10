@@ -1,6 +1,7 @@
 import os
 import time
 import unittest
+from unittest.mock import patch
 from urllib.parse import quote
 
 os.environ.setdefault('vulnerable', '1')
@@ -24,6 +25,15 @@ class VampiTestCase(unittest.TestCase):
 
     def auth(self, username, password):
         return {'Authorization': 'Bearer ' + self.token(username, password)}
+
+
+class CreateDbTest(VampiTestCase):
+    def test_createdb_assigns_unique_book_titles_when_random_values_repeat(self):
+        with patch('models.user_model.randrange', side_effect=[42, 42, 43, 42, 43, 44]):
+            res = self.client.get('/createdb')
+        self.assertEqual(res.status_code, 200)
+        titles = [book['book_title'] for book in self.client.get('/books/v1').get_json()['Books']]
+        self.assertEqual(sorted(titles), ['bookTitle42', 'bookTitle43', 'bookTitle44'])
 
 
 class SqlInjectionTest(VampiTestCase):
