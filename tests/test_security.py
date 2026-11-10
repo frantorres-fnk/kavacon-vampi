@@ -99,5 +99,14 @@ class DebugEndpointExposureTest(VampiTestCase):
         self.assertTrue(all('password' not in user for user in users))
 
 
+class UserEnumerationTest(VampiTestCase):
+    def test_login_does_not_reveal_whether_user_exists(self):
+        wrong_password = self.client.post('/users/v1/login', json={'username': 'name1', 'password': 'wrong'})
+        unknown_user = self.client.post('/users/v1/login', json={'username': 'nobody', 'password': 'wrong'})
+        self.assertEqual(wrong_password.status_code, unknown_user.status_code)
+        self.assertEqual(wrong_password.get_json(), unknown_user.get_json())
+        self.assertNotIn('auth_token', wrong_password.get_json())
+
+
 if __name__ == '__main__':
     unittest.main()
