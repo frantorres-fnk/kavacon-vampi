@@ -126,5 +126,17 @@ class EmailRegexDosTest(VampiTestCase):
         self.assertLess(time.monotonic() - start, 0.5)
 
 
+class JwtSigningKeyTest(VampiTestCase):
+    def test_token_signed_with_guessable_key_is_rejected(self):
+        forged = jwt.encode({'sub': 'admin', 'exp': int(time.time()) + 600, 'iat': int(time.time())}, 'random', algorithm='HS256')
+        res = self.client.get('/me', headers={'Authorization': 'Bearer ' + forged})
+        self.assertEqual(res.status_code, 401)
+
+    def test_issued_token_is_accepted(self):
+        res = self.client.get('/me', headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()['data']['username'], 'name1')
+
+
 if __name__ == '__main__':
     unittest.main()
