@@ -70,5 +70,15 @@ class BookAuthorizationTest(VampiTestCase):
         self.assertNotIn('secret', res.get_json())
 
 
+class MassAssignmentTest(VampiTestCase):
+    def test_registration_cannot_grant_admin(self):
+        res = self.client.post('/users/v1/register', json={
+            'username': 'mallory', 'password': 'pw', 'email': 'mallory@mail.com', 'admin': True
+        })
+        self.assertEqual(res.status_code, 200)
+        me = self.client.get('/me', headers=self.auth('mallory', 'pw')).get_json()
+        self.assertFalse(me['data']['admin'])
+
+
 if __name__ == '__main__':
     unittest.main()
