@@ -80,5 +80,24 @@ class MassAssignmentTest(VampiTestCase):
         self.assertFalse(me['data']['admin'])
 
 
+class DebugEndpointExposureTest(VampiTestCase):
+    def test_debug_requires_authentication(self):
+        res = self.client.get('/users/v1/_debug')
+        self.assertEqual(res.status_code, 401)
+        self.assertNotIn('pass1', res.get_data(as_text=True))
+
+    def test_debug_requires_admin(self):
+        res = self.client.get('/users/v1/_debug', headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 403)
+        self.assertNotIn('pass1', res.get_data(as_text=True))
+
+    def test_debug_for_admin_does_not_expose_passwords(self):
+        res = self.client.get('/users/v1/_debug', headers=self.auth('admin', 'pass1'))
+        self.assertEqual(res.status_code, 200)
+        users = res.get_json()['users']
+        self.assertTrue(any(user['username'] == 'admin' and user['admin'] for user in users))
+        self.assertTrue(all('password' not in user for user in users))
+
+
 if __name__ == '__main__':
     unittest.main()
