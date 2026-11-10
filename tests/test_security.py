@@ -52,5 +52,23 @@ class UnauthorizedPasswordChangeTest(VampiTestCase):
         self.assertIn('auth_token', self.login('name2', 'pass2'))
 
 
+class BookAuthorizationTest(VampiTestCase):
+    def book_of(self, username):
+        books = self.client.get('/books/v1').get_json()['Books']
+        return next(book['book_title'] for book in books if book['user'] == username)
+
+    def test_owner_can_read_own_book_secret(self):
+        title = self.book_of('name1')
+        res = self.client.get('/books/v1/' + title, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()['owner'], 'name1')
+
+    def test_user_cannot_read_book_secret_of_another_user(self):
+        title = self.book_of('name2')
+        res = self.client.get('/books/v1/' + title, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 404)
+        self.assertNotIn('secret', res.get_json())
+
+
 if __name__ == '__main__':
     unittest.main()
