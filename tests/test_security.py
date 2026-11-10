@@ -108,5 +108,23 @@ class UserEnumerationTest(VampiTestCase):
         self.assertNotIn('auth_token', wrong_password.get_json())
 
 
+class EmailRegexDosTest(VampiTestCase):
+    def test_valid_email_can_be_updated(self):
+        res = self.client.put('/users/v1/name1/email', json={'email': 'new.mail-1@example.org'}, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 204)
+        self.assertEqual(self.client.get('/users/v1/name1').get_json()['email'], 'new.mail-1@example.org')
+
+    def test_invalid_email_is_rejected(self):
+        res = self.client.put('/users/v1/name1/email', json={'email': 'not-an-email'}, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 400)
+
+    def test_malicious_email_is_rejected_quickly(self):
+        headers = self.auth('name1', 'pass1')
+        start = time.monotonic()
+        res = self.client.put('/users/v1/name1/email', json={'email': 'a' * 26 + '!'}, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertLess(time.monotonic() - start, 0.5)
+
+
 if __name__ == '__main__':
     unittest.main()
