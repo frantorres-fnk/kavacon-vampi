@@ -39,5 +39,18 @@ class SqlInjectionTest(VampiTestCase):
         self.assertNotIn('pass1', res.get_data(as_text=True))
 
 
+class UnauthorizedPasswordChangeTest(VampiTestCase):
+    def test_user_can_change_own_password(self):
+        res = self.client.put('/users/v1/name1/password', json={'password': 'newpass1'}, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 204)
+        self.assertIn('auth_token', self.login('name1', 'newpass1'))
+
+    def test_user_cannot_change_password_of_another_user(self):
+        res = self.client.put('/users/v1/name2/password', json={'password': 'hacked'}, headers=self.auth('name1', 'pass1'))
+        self.assertEqual(res.status_code, 403)
+        self.assertNotIn('auth_token', self.login('name2', 'hacked'))
+        self.assertIn('auth_token', self.login('name2', 'pass2'))
+
+
 if __name__ == '__main__':
     unittest.main()
